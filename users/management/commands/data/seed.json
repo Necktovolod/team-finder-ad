@@ -1,0 +1,76 @@
+{
+  "users": [
+    {
+      "email": "kirill@yandex.ru",
+      "password": "qwerty12345",
+      "name": "Кирилл",
+      "surname": "Сазонов",
+      "phone": "+79161112233",
+      "about": "Java/Kotlin backend, в свободное время делаю pet-проекты на Python.",
+      "github_url": "https://github.com/kirill-demo"
+    },
+    {
+      "email": "elena@example.com",
+      "password": "qwerty12345",
+      "name": "Елена",
+      "surname": "Морозова",
+      "phone": "+79162223344",
+      "about": "Product designer, ищу команду в pet-проект про экологию.",
+      "github_url": ""
+    },
+    {
+      "email": "artem@example.com",
+      "password": "qwerty12345",
+      "name": "Артём",
+      "surname": "Литвиненко",
+      "phone": "+79163334455",
+      "about": "QA-инженер с уклоном в автотесты на Python.",
+      "github_url": "https://github.com/artyom-qa"
+    },
+    {
+      "email": "viktoriya@example.com",
+      "password": "qwerty12345",
+      "name": "Виктория",
+      "surname": "Кравчук",
+      "phone": "+79164445566",
+      "about": "Mobile-разработчик: Flutter, чуть-чуть SwiftUI.",
+      "github_url": ""
+    }
+  ],
+  "projects": [
+    {
+      "owner_email": "kirill@yandex.ru",
+      "name": "Лента событий разработчика",
+      "description": "Соберём в одном месте релизы, конференции и митапы по технологиям, которые тебе интересны.",
+      "status": "open",
+      "github_url": ""
+    },
+    {
+      "owner_email": "elena@example.com",
+      "name": "Карта раздельного сбора отходов",
+      "description": "PWA-приложение со списком пунктов приёма вторсырья и фильтром по типу материала.",
+      "status": "open",
+      "github_url": "https://github.com/elena-demo/recycle-map"
+    },
+    {
+      "owner_email": "artem@example.com",
+      "name": "Платформа для написания и обмена тест-кейсами",
+      "description": "Совместная работа над тест-документацией с экспортом в популярные форматы.",
+      "status": "open",
+      "github_url": ""
+    },
+    {
+      "owner_email": "viktoriya@example.com",
+      "name": "Mobile-приложение по обмену книгами",
+      "description": "Подобие BookCrossing с гео-метками и чатом между владельцами.",
+      "status": "closed",
+      "github_url": ""
+    }
+  ],
+  "superuser": {
+    "email": "admin@example.com",
+    "password": "admin12345",
+    "name": "Admin",
+    "surname": "Root"
+  }
+}
