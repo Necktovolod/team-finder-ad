@@ -1,6 +1,6 @@
-"""Регистрация модели User в админке."""
+"""Админка для модели User."""
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.forms import (
     AdminPasswordChangeForm,
     UserChangeForm,
@@ -8,38 +8,33 @@ from django.contrib.auth.forms import (
 )
 from django.utils.html import format_html
 
-from .constants import ADMIN_AVATAR_PIXELS
 from .models import User
 
 
-class UserSignupForm(UserCreationForm):
-    """Форма создания пользователя в админке."""
-
+class _AdminSignupForm(UserCreationForm):
     class Meta:
         model = User
         fields = ("email", "name", "surname")
 
 
-class UserUpdateForm(UserChangeForm):
-    """Форма редактирования пользователя в админке."""
-
+class _AdminChangeForm(UserChangeForm):
     class Meta:
         model = User
         fields = "__all__"
 
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin):
-    """Настроенная админка для кастомного User."""
+class UserAdmin(DjangoUserAdmin):
+    """Регистрация модели User в админке Django."""
 
-    add_form = UserSignupForm
-    form = UserUpdateForm
+    add_form = _AdminSignupForm
+    form = _AdminChangeForm
     change_password_form = AdminPasswordChangeForm
     model = User
 
     list_display = (
         "id",
-        "avatar_preview",
+        "avatar_tag",
         "email",
         "name",
         "surname",
@@ -56,28 +51,16 @@ class UserAdmin(BaseUserAdmin):
         (None, {"fields": ("email", "password")}),
         (
             "Личные данные",
-            {
-                "fields": (
-                    "name",
-                    "surname",
-                    "avatar",
-                    "about",
-                    "phone",
-                    "github_url",
-                ),
-            },
+            {"fields": (
+                "name", "surname", "avatar", "about", "phone", "github_url",
+            )},
         ),
         (
-            "Права доступа",
-            {
-                "fields": (
-                    "is_active",
-                    "is_staff",
-                    "is_superuser",
-                    "groups",
-                    "user_permissions",
-                ),
-            },
+            "Права",
+            {"fields": (
+                "is_active", "is_staff", "is_superuser",
+                "groups", "user_permissions",
+            )},
         ),
         ("Даты", {"fields": ("last_login", "date_joined")}),
     )
@@ -87,25 +70,18 @@ class UserAdmin(BaseUserAdmin):
             {
                 "classes": ("wide",),
                 "fields": (
-                    "email",
-                    "name",
-                    "surname",
-                    "password1",
-                    "password2",
+                    "email", "name", "surname", "password1", "password2",
                 ),
             },
         ),
     )
 
     @admin.display(description="Аватар")
-    def avatar_preview(self, obj: User) -> str:
-        """Миниатюра аватара в списке пользователей."""
+    def avatar_tag(self, obj: User) -> str:
         if not obj.avatar:
             return ""
         return format_html(
-            '<img src="{}" width="{}" height="{}" '
+            '<img src="{}" width="32" height="32" '
             'style="border-radius:50%;object-fit:cover" />',
             obj.avatar.url,
-            ADMIN_AVATAR_PIXELS,
-            ADMIN_AVATAR_PIXELS,
         )

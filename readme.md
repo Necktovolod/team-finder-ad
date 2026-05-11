@@ -1,106 +1,55 @@
-# 🤝 TeamFinder
+# TeamFinder
 
-> Веб-платформа для поиска тиммейтов на pet-проекты.
-> Авторы публикуют идеи, остальные пользователи добавляют их в
-> избранное и присоединяются как участники.
+Платформа для поиска тиммейтов на pet-проекты. Реализован вариант 1
+(избранное + фильтрация пользователей по 4 признакам).
 
-📦 Реализован **Вариант 1**: «Избранное» + фильтрация пользователей по
-4 критериям (фавориты автора, общие проекты и т. д.).
+В качестве вьюх везде используются **Class-Based Views** —
+наследники `ListView`, `DetailView`, `CreateView`, `UpdateView`
+и `View` (для AJAX-эндпоинтов). Для логина/логаута/смены пароля
+переиспользуются готовые `django.contrib.auth.views`.
 
----
+## Зависимости
 
-## 🛠 Стек
+- Python 3.11
+- Django 5.2.4
+- PostgreSQL 16
+- Pillow
+- python-decouple
 
-| Слой         | Технологии                                |
-|--------------|-------------------------------------------|
-| Backend      | Python 3.11, Django 5.2.4                 |
-| База данных  | PostgreSQL 16 (поднимается через Docker)  |
-| Изображения  | Pillow (генератор аватарок-плейсхолдеров) |
-| Конфиг       | python-decouple (значения из `.env`)      |
+## Запуск локально
 
----
-
-## 📁 Структура проекта
-
-```
-team-finder-ad/
-├── team_finder/        # настройки Django, корневые URL и WSGI/ASGI
-├── users/              # модель User, валидаторы, фильтры, формы, вьюхи
-│   ├── constants.py    # длины полей, палитра аватаров и т. п.
-│   ├── validators.py   # phone_format_validator, github_link_validator
-│   ├── services.py     # to_canonical_phone и другие хелперы
-│   ├── filters.py      # классы-стратегии фильтрации списка юзеров
-│   └── …
-├── projects/           # модель Project, CRUD, AJAX, избранное
-│   ├── constants.py    # статусы, лимиты, размер страницы
-│   ├── services.py     # paginate, base_project_queryset, with_related
-│   └── …
-├── templates_var1/     # HTML-шаблоны (вариант 1)
-├── static/             # CSS, JS, шрифты, картинки
-└── docker-compose.yml  # сервис PostgreSQL
-```
-
----
-
-## 🚀 Запуск
-
-### 1. Клонирование
 ```bash
 git clone https://github.com/Necktovolod/team-finder-ad.git
 cd team-finder-ad
-```
 
-### 2. Виртуальное окружение
-```bash
 python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux / macOS
-source venv/bin/activate
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
 
-### 3. Конфиг
-```bash
-cp .env_example .env
-# → отредактировать значения при необходимости
-```
+cp .env_example .env              # отредактировать при необходимости
 
-### 4. PostgreSQL через Docker
-```bash
-docker compose up -d
-```
-
-### 5. Миграции и демо-данные
-```bash
+docker compose up -d              # PostgreSQL
 python manage.py migrate
 python manage.py seed_data
-```
-
-### 6. Сервер разработки
-```bash
 python manage.py runserver
-# → http://localhost:8000
 ```
 
----
+После этого сайт открыт на `http://localhost:8000/`.
 
-## ⚙️ Переменные окружения
+## Переменные окружения
 
-| Имя                    | Описание                                             |
-|------------------------|------------------------------------------------------|
-| `DJANGO_SECRET_KEY`    | секрет Django                                        |
-| `DJANGO_DEBUG`         | `True` для разработки                                |
-| `DJANGO_ALLOWED_HOSTS` | список хостов через запятую                          |
-| `POSTGRES_DB`          | имя базы                                             |
-| `POSTGRES_USER`        | пользователь                                         |
-| `POSTGRES_PASSWORD`    | пароль                                               |
-| `POSTGRES_HOST`        | хост базы (`localhost` для локальной разработки)     |
-| `POSTGRES_PORT`        | порт базы                                            |
+| Имя                    | Описание                                         |
+|------------------------|--------------------------------------------------|
+| `DJANGO_SECRET_KEY`    | секретный ключ                                   |
+| `DJANGO_DEBUG`         | `True` для разработки                            |
+| `DJANGO_ALLOWED_HOSTS` | список хостов через запятую                      |
+| `POSTGRES_DB`          | имя БД                                           |
+| `POSTGRES_USER`        | пользователь                                     |
+| `POSTGRES_PASSWORD`    | пароль                                           |
+| `POSTGRES_HOST`        | хост (`localhost` для локальной разработки)      |
+| `POSTGRES_PORT`        | порт                                             |
 
----
-
-## 👥 Демонстрационные аккаунты
+## Демо-учётки
 
 | Email                     | Пароль        | Роль          |
 |---------------------------|---------------|---------------|
@@ -110,46 +59,39 @@ python manage.py runserver
 | `artem@example.com`       | `qwerty12345` | пользователь  |
 | `viktoriya@example.com`   | `qwerty12345` | пользователь  |
 
----
+## Что реализовано
 
-## ✨ Что реализовано
+- кастомный `User` (email вместо username), валидация через
+  `RegexValidator`;
+- автогенерация placeholder-аватарки в `User.save()`;
+- проверка телефона и его нормализация (`8XXXXXXXXXX` → `+7XXXXXXXXXX`)
+  через `User.canonical_phone`;
+- проверка ссылки на `github.com` для пользователей и проектов;
+- `Project.Status` как `TextChoices`, `Project.is_open` — property;
+- list-страницы используют `paginate_by = 12`;
+- AJAX-эндпоинты — `View`-наследники с декоратором `@require_POST`;
+- логин/логаут/смена пароля — `django.contrib.auth.views`-наследники;
+- список пользователей с 4 фильтрами по `?filter=...`.
 
-- 👤 Кастомная модель `User` с email вместо username.
-- 🎨 Автогенерация аватарки (буква на цветном фоне) при создании
-  пользователя без изображения.
-- 📞 Нормализация телефона: `8XXXXXXXXXX` → `+7XXXXXXXXXX`.
-- 🔗 Валидация ссылки на GitHub (домен `github.com`).
-- 📃 Пагинация по 12 элементов.
-- ❤️ Избранное (AJAX): `POST /projects/<id>/toggle-favorite/`.
-- 🤝 Участие в проекте (AJAX): `POST /projects/<id>/toggle-participate/`.
-- 🏁 Закрытие проекта владельцем (AJAX): `POST /projects/<id>/complete/`.
-- 🔎 4 фильтра пользователей на `/users/list/?filter=...`.
-- 🧰 Админка с миниатюрой аватарки и списком участников проекта.
-
----
-
-## ✅ Тесты
+## Запуск тестов
 
 ```bash
 python manage.py test users projects
 ```
 
-В проекте 20 авто-тестов, покрывающих модели, формы, AJAX-эндпоинты,
-страницы и фильтры.
+В наборе 20 тестов: модель, формы, регистрация, логин/логаут, профиль,
+создание/редактирование проекта, AJAX-эндпоинты, страница «Избранное»,
+фильтр пользователей.
 
----
-
-## 🧹 Линтер
-
-`flake8` настроен в `setup.cfg` (max-line-length = 100):
+## Линтер
 
 ```bash
 pip install flake8
 flake8 users projects team_finder
 ```
 
----
+Конфиг — в `setup.cfg`, лимит длины строки 100.
 
-## 👨‍💻 Автор
+## Автор
 
-- GitHub: [Necktovolod](https://github.com/Necktovolod)
+[Necktovolod](https://github.com/Necktovolod)

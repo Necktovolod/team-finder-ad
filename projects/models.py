@@ -1,24 +1,26 @@
-"""Модель проекта."""
+"""Модель проекта.
+
+Используется ``TextChoices`` Django 3+, чтобы статусы были типобезопасными
+и не требовали ручной поддержки ``STATUS_CHOICES``-кортежей и констант
+с ``len(...)``.
+"""
+from __future__ import annotations
+
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 
-from users.validators import github_link_validator
-
-from .constants import (
-    PROJECT_NAME_MAX_LENGTH,
-    PROJECT_STATUS_CHOICES,
-    PROJECT_STATUS_MAX_LENGTH,
-    PROJECT_STATUS_OPEN,
-)
+from users.models import User
 
 
 class Project(models.Model):
-    """Pet-проект, на который пользователь ищет тиммейтов."""
+    """Pet-проект, к которому ищут участников."""
 
-    name = models.CharField(
-        "Название", max_length=PROJECT_NAME_MAX_LENGTH,
-    )
+    class Status(models.TextChoices):
+        OPEN = "open", "Открыт"
+        CLOSED = "closed", "Закрыт"
+
+    name = models.CharField("Название", max_length=200)
     description = models.TextField("Описание", blank=True, default="")
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -30,13 +32,16 @@ class Project(models.Model):
         "Дата создания", auto_now_add=True,
     )
     github_url = models.URLField(
-        "GitHub", blank=True, default="", validators=[github_link_validator],
+        "GitHub",
+        blank=True,
+        default="",
+        validators=[User.github_validator],
     )
     status = models.CharField(
         "Статус",
-        max_length=PROJECT_STATUS_MAX_LENGTH,
-        choices=PROJECT_STATUS_CHOICES,
-        default=PROJECT_STATUS_OPEN,
+        max_length=max(len(value) for value, _ in Status.choices),
+        choices=Status.choices,
+        default=Status.OPEN,
     )
     participants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -54,5 +59,8 @@ class Project(models.Model):
         return self.name
 
     def get_absolute_url(self) -> str:
-        """Канонический URL для отображения проекта на сайте."""
         return reverse("projects:detail", args=[self.pk])
+
+    @property
+    def is_open(self) -> bool:
+        return self.status == self.Status.OPEN
