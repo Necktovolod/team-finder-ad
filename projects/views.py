@@ -1,24 +1,34 @@
 """Class-based вьюхи для приложения projects.
 
-Списки выводятся через ``ListView`` (`paginate_by = 12`),
-страница проекта — через ``DetailView`` с предзагрузкой связанных
-данных. AJAX-эндпоинты — короткие наследники ``View``, чтобы
-переиспользовать механизмы ``LoginRequiredMixin`` / ``UserPassesTestMixin``.
+Списки выводятся через :class:`ListView` (``paginate_by`` из constants),
+страница проекта — через :class:`DetailView` с предзагрузкой связанных
+данных. AJAX-эндпоинты — короткие наследники :class:`View`, чтобы
+переиспользовать механизмы ``LoginRequiredMixin``.
 """
 from __future__ import annotations
 
 from http import HTTPStatus
 
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
-from django.urls import reverse_lazy
+from django.shortcuts import redirect
+from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.edit import FormMixin
-from django.utils.decorators import method_decorator
 
+from .constants import PROJECTS_PER_PAGE
 from .forms import ProjectForm
+from .mixins import OwnerOrStaffMixin
 from .models import Project
+
+
+# ---------- Корневой redirect, подключён в team_finder/urls.py ------------
+
+
+def home_redirect(request):
+    """Главная страница перенаправляет на список проектов."""
+    return redirect("projects:list")
 
 
 # ---------- List views ----------
@@ -28,7 +38,7 @@ class _ProjectListBase(ListView):
     """Базовый ListView, подгружающий ``owner`` и ``participants``."""
 
     model = Project
-    paginate_by = 12
+    paginate_by = PROJECTS_PER_PAGE
     context_object_name = "projects"
 
     def get_queryset(self):
@@ -53,7 +63,9 @@ class FavoriteProjectsView(LoginRequiredMixin, _ProjectListBase):
     template_name = "projects/favorite_projects.html"
 
     def get_queryset(self):
-        return super().get_queryset().filter(interested_users=self.request.user)
+        return super().get_queryset().filter(
+            interested_users=self.request.user,
+        )
 
 
 # ---------- Detail / Create / Edit ----------
@@ -63,7 +75,6 @@ class ProjectDetailView(DetailView):
     """Детальная страница проекта."""
 
     model = Project
-    context_object_name = "project"
     template_name = "projects/project-details.html"
 
     def get_queryset(self):
@@ -90,43 +101,21 @@ class ProjectCreateView(LoginRequiredMixin, CreateView):
         self.object = project
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return self.object.get_absolute_url()
 
+class ProjectUpdateView(LoginRequiredMixin, OwnerOrStaffMixin, UpdateView):
+    """Редактирование проекта владельцем или администратором.
 
-class _OwnerOrStaffMixin(UserPassesTestMixin):
-    """Разрешает доступ только владельцу проекта или администратору."""
-
-    def test_func(self):
-        project = self.get_object()
-        return (
-            project.owner_id == self.request.user.id
-            or self.request.user.is_staff
-        )
-
-    def handle_no_permission(self):
-        # Без алёрта 403 — просто откатываем на страницу проекта.
-        return _redirect_to(self.get_object())
-
-
-def _redirect_to(project: Project):
-    from django.shortcuts import redirect
-    return redirect(project.get_absolute_url())
-
-
-class ProjectUpdateView(LoginRequiredMixin, _OwnerOrStaffMixin, UpdateView):
-    """Редактирование проекта владельцем или администратором."""
+    ``get_success_url`` определять не нужно — Django сам вызывает
+    ``self.object.get_absolute_url()``.
+    """
 
     model = Project
     form_class = ProjectForm
     template_name = "projects/create-project.html"
     extra_context = {"is_edit": True}
 
-    def get_success_url(self):
-        return self.object.get_absolute_url()
 
-
-# ---------- AJAX endpoints (всё ещё CBV, но коротенькие) ----------
+# ---------- AJAX endpoints ----------
 
 
 class _JsonAjaxView(LoginRequiredMixin, FormMixin, DetailView):
@@ -138,8 +127,9 @@ class _JsonAjaxView(LoginRequiredMixin, FormMixin, DetailView):
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request, *args, **kwargs):  # noqa: D401
-        # Защита: GET не нужен; на всякий случай блокируем (require_POST уже это делает).
+    def get(self, request, *args, **kwargs):
+        # require_POST уже отсекает GET; этот метод — страховка
+        # на случай если decorator снимут.
         return JsonResponse({}, status=HTTPStatus.METHOD_NOT_ALLOWED)
 
 
@@ -188,9 +178,3 @@ class ToggleFavoriteView(_JsonAjaxView):
             return JsonResponse({"status": "ok", "favorited": False})
         favorites.add(project)
         return JsonResponse({"status": "ok", "favorited": True})
-
-
-# ---------- URL-обёртки ----------
-
-# Пара публичных reverse_lazy-имён, используемых в settings.LOGIN_URL и redirect'ах.
-LOGIN_URL = reverse_lazy("users:login")

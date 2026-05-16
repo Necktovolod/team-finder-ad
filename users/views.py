@@ -18,8 +18,26 @@ from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
+from .constants import USERS_PER_PAGE
 from .forms import LoginForm, ProfileEditForm, SignupForm
 from .models import User
+
+# Маппинг ``?filter=...`` → выражения для ``QuerySet.filter``.
+# Используется внутри ``UserListView.get_queryset``.
+FILTER_LOOKUPS = {
+    "owners-of-favorite-projects": lambda u: {
+        "owned_projects__in": u.favorites.all(),
+    },
+    "owners-of-participating-projects": lambda u: {
+        "owned_projects__in": u.participated_projects.all(),
+    },
+    "interested-in-my-projects": lambda u: {
+        "favorites__in": u.owned_projects.all(),
+    },
+    "participants-of-my-projects": lambda u: {
+        "participated_projects__in": u.owned_projects.all(),
+    },
+}
 
 
 # ---------- Auth -----------------------------------------------------------
@@ -107,24 +125,6 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
 # ---------- Список пользователей с фильтрами -------------------------------
 
 
-# Маппинг ``?filter=...`` → выражения для ``QuerySet.filter``.
-# Используется внутри ``UserListView.get_queryset``.
-FILTER_LOOKUPS = {
-    "owners-of-favorite-projects": lambda u: {
-        "owned_projects__in": u.favorites.all(),
-    },
-    "owners-of-participating-projects": lambda u: {
-        "owned_projects__in": u.participated_projects.all(),
-    },
-    "interested-in-my-projects": lambda u: {
-        "favorites__in": u.owned_projects.all(),
-    },
-    "participants-of-my-projects": lambda u: {
-        "participated_projects__in": u.owned_projects.all(),
-    },
-}
-
-
 class UserListView(ListView):
     """Список всех пользователей платформы.
 
@@ -132,7 +132,7 @@ class UserListView(ListView):
     """
 
     model = User
-    paginate_by = 12
+    paginate_by = USERS_PER_PAGE
     template_name = "users/participants.html"
     context_object_name = "participants"
 

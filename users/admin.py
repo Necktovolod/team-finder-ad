@@ -6,8 +6,10 @@ from django.contrib.auth.forms import (
     UserChangeForm,
     UserCreationForm,
 )
+from django.db.models import Count
 from django.utils.html import format_html
 
+from .constants import ADMIN_AVATAR_THUMB_PX
 from .models import User
 
 
@@ -38,6 +40,7 @@ class UserAdmin(DjangoUserAdmin):
         "email",
         "name",
         "surname",
+        "participated_projects_count",
         "is_staff",
         "is_active",
     )
@@ -76,12 +79,29 @@ class UserAdmin(DjangoUserAdmin):
         ),
     )
 
+    def get_queryset(self, request):
+        """Аннотируем количество проектов одним SQL, чтобы избежать N+1."""
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(_participated_count=Count("participated_projects"))
+        )
+
     @admin.display(description="Аватар")
     def avatar_tag(self, obj: User) -> str:
         if not obj.avatar:
             return ""
         return format_html(
-            '<img src="{}" width="32" height="32" '
+            '<img src="{}" width="{}" height="{}" '
             'style="border-radius:50%;object-fit:cover" />',
             obj.avatar.url,
+            ADMIN_AVATAR_THUMB_PX,
+            ADMIN_AVATAR_THUMB_PX,
         )
+
+    @admin.display(
+        description="Проектов",
+        ordering="_participated_count",
+    )
+    def participated_projects_count(self, obj: User) -> int:
+        return obj._participated_count

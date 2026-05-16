@@ -12,6 +12,8 @@ from django.urls import reverse
 
 from users.models import User
 
+from .constants import NAME_MAX_LENGTH
+
 
 class Project(models.Model):
     """Pet-проект, к которому ищут участников."""
@@ -20,7 +22,7 @@ class Project(models.Model):
         OPEN = "open", "Открыт"
         CLOSED = "closed", "Закрыт"
 
-    name = models.CharField("Название", max_length=200)
+    name = models.CharField("Название", max_length=NAME_MAX_LENGTH)
     description = models.TextField("Описание", blank=True, default="")
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -1,10 +1,14 @@
 from pathlib import Path
 
 from decouple import Csv, config
+from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config("DJANGO_SECRET_KEY")
+SECRET_KEY = config(
+    "DJANGO_SECRET_KEY",
+    default=get_random_secret_key(),
+)
 DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config(
     "DJANGO_ALLOWED_HOSTS",
@@ -64,8 +68,6 @@ DATABASES = {
 
 AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "users:login"
-LOGIN_REDIRECT_URL = "projects:list"
-LOGOUT_REDIRECT_URL = "projects:list"
 AUTH_PASSWORD_VALIDATORS: list = []
 
 LANGUAGE_CODE = "ru"

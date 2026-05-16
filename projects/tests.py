@@ -72,7 +72,9 @@ class CreateAndEditTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         project = Project.objects.get(name="Brand new")
         self.assertEqual(project.owner, self.maker)
-        self.assertIn(self.maker, project.participants.all())
+        self.assertTrue(
+            project.participants.filter(pk=self.maker.pk).exists(),
+        )
 
     def test_create_rejects_non_github_url(self) -> None:
         response = self.maker_client.post(
@@ -109,10 +111,8 @@ class AjaxTests(TestCase):
         cls.owner_cli.force_login(cls.owner)
         cls.guest_cli = Client()
         cls.guest_cli.force_login(cls.guest)
-
-    def setUp(self) -> None:
-        self.project = Project.objects.create(
-            name="AJAX target", owner=self.owner,
+        cls.project = Project.objects.create(
+            name="AJAX target", owner=cls.owner,
         )
 
     def _ajax(self, client: Client, url: str):
@@ -136,13 +136,19 @@ class AjaxTests(TestCase):
         self.assertFalse(payload["participant"])
 
     def test_complete_only_for_owner(self) -> None:
-        url = reverse("projects:complete", args=[self.project.pk])
+        # Создаём локальный проект, чтобы не мутировать общий cls.project
+        # (после rollback БД его статус снова станет OPEN, но Python-объект
+        # cls.project в памяти на это не реагирует).
+        project = Project.objects.create(
+            name="Disposable for complete test", owner=self.owner,
+        )
+        url = reverse("projects:complete", args=[project.pk])
         response = self.guest_cli.post(url)
         self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
         response = self.owner_cli.post(url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.project.refresh_from_db()
-        self.assertEqual(self.project.status, Project.Status.CLOSED)
+        project.refresh_from_db()
+        self.assertEqual(project.status, Project.Status.CLOSED)
 
 
 class FavoritesAndFiltersTests(TestCase):

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 from django.core.management.base import BaseCommand, CommandError
+from tqdm import tqdm
 
 from projects.models import Project
 from users.models import User
@@ -47,7 +48,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def _import_users(records) -> Iterable[str]:
-        for r in records:
+        for r in tqdm(list(records), desc="Пользователи"):
             user, fresh = User.objects.get_or_create(
                 email=r["email"],
                 defaults={
@@ -67,7 +68,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def _import_projects(records) -> Iterable[str]:
-        for r in records:
+        for r in tqdm(list(records), desc="Проекты"):
             owner = User.objects.get(email=r["owner_email"])
             project, fresh = Project.objects.get_or_create(
                 name=r["name"],

@@ -6,14 +6,15 @@
 from django import forms
 from django.contrib.auth import authenticate
 
+from .constants import NAME_MAX_LENGTH, SURNAME_MAX_LENGTH
 from .models import User
 
 
 class SignupForm(forms.ModelForm):
     """Регистрация: email + имя + фамилия + пароль."""
 
-    name = forms.CharField(label="Имя", max_length=124)
-    surname = forms.CharField(label="Фамилия", max_length=124)
+    name = forms.CharField(label="Имя", max_length=NAME_MAX_LENGTH)
+    surname = forms.CharField(label="Фамилия", max_length=SURNAME_MAX_LENGTH)
     email = forms.EmailField(label="Email")
     password = forms.CharField(label="Пароль", widget=forms.PasswordInput)
 
@@ -65,21 +66,16 @@ class LoginForm(forms.Form):
 
 
 class ProfileEditForm(forms.ModelForm):
-    """Изменение профиля владельцем."""
+    """Изменение профиля владельцем.
+
+    Labels не указываем — они подтянутся из ``verbose_name`` полей модели.
+    """
 
     class Meta:
         model = User
         fields = (
             "name", "surname", "avatar", "about", "phone", "github_url",
         )
-        labels = {
-            "name": "Имя",
-            "surname": "Фамилия",
-            "avatar": "Аватар",
-            "about": "О себе",
-            "phone": "Телефон",
-            "github_url": "Ссылка на Github",
-        }
         widgets = {"about": forms.Textarea(attrs={"rows": 3})}
 
     def clean_phone(self):

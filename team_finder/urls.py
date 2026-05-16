@@ -2,17 +2,12 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.shortcuts import redirect
 from django.urls import include, path
 
-
-def home_redirect(request):
-    """Главная страница перенаправляет на список проектов."""
-    return redirect("projects:list")
-
+from projects.views import home_redirect
 
 urlpatterns = [
-    path("", home_redirect),
+    path("", home_redirect, name="home"),
     path("admin/", admin.site.urls),
     path("projects/", include("projects.urls")),
     path("users/", include("users.urls")),
